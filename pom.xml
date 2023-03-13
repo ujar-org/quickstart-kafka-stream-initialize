@@ -2,12 +2,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.ujar.bs.msg.kafka</groupId>
-    <artifactId>bs-msg-kafka-stream-start</artifactId>
+    <groupId>org.ujar</groupId>
+    <artifactId>quickstart-kafka-stream-initialize</artifactId>
     <version>0.2.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>bs-msg-kafka-stream-start</name>
+    <name>quickstart-kafka-stream-initialize</name>
     <description>Sample of Kafka Streams app.</description>
     <licenses>
         <license>
@@ -42,14 +42,19 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <sonar.exclusions>**/*Application.java</sonar.exclusions>
-        <start-class>org.ujar.bs.msg.kafka.stream.start.KafkaStreamStartApplication</start-class>
+        <checkstyle.skip>false</checkstyle.skip>
+        <maven.gitcommitid.skip>false</maven.gitcommitid.skip>
+        <start-class>org.ujar.kafkastreaminitialize.KafkaStreamInitializeApplication</start-class>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.ujar.boot</groupId>
             <artifactId>ujar-boot-starter-kafka</artifactId>
-            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ujar.boot</groupId>
+            <artifactId>ujar-boot-starter-observability</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>

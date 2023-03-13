@@ -31,10 +31,10 @@ steps :
       SONAR_TOKEN :
         from_secret : SONAR_TOKEN
     commands :
-      - mvn clean compile test-compile -P default -B  --file pom.xml -s ../maven-settings.xml -Ddeployer.username=$DEPLOYER_USERNAME -Ddeployer.password=$DEPLOYER_PASSWORD
-      - mvn pmd:check -P default -B --file pom.xml -s ../maven-settings.xml -Ddeployer.username=$DEPLOYER_USERNAME -Ddeployer.password=$DEPLOYER_PASSWORD
-      - mvn com.github.spotbugs:spotbugs-maven-plugin:4.7.3.0:check -P default -Dspotbugs.xmlOutput=true -Dspotbugs.failOnError=true -Dspotbugs.excludeFilterFile=../spotbugs-exclude.xml -Dspotbugs.includeTests=true  --file pom.xml -s ../maven-settings.xml -Ddeployer.username=$DEPLOYER_USERNAME -Ddeployer.password=$DEPLOYER_PASSWORD
-      - mvn org.jacoco:jacoco-maven-plugin:prepare-agent package org.jacoco:jacoco-maven-plugin:report sonar:sonar -P default -Dsonar.host.url=$SONAR_HOST -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=ujar-org:bs-msg-kafka-stream-start -Dsonar.projectName=ujar-org:bs-msg-kafka-stream-start --batch-mode  --file pom.xml -s ../maven-settings.xml -Ddeployer.username=$DEPLOYER_USERNAME -Ddeployer.password=$DEPLOYER_PASSWORD
+      - mvn clean compile test-compile -B  --file pom.xml -s ../maven-settings.xml -Ddeployer.username=$DEPLOYER_USERNAME -Ddeployer.password=$DEPLOYER_PASSWORD
+      - mvn pmd:check -B --file pom.xml -s ../maven-settings.xml -Ddeployer.username=$DEPLOYER_USERNAME -Ddeployer.password=$DEPLOYER_PASSWORD
+      - mvn com.github.spotbugs:spotbugs-maven-plugin:4.7.3.0:check -Dspotbugs.xmlOutput=true -Dspotbugs.failOnError=true -Dspotbugs.excludeFilterFile=../spotbugs-exclude.xml -Dspotbugs.includeTests=true  --file pom.xml -s ../maven-settings.xml -Ddeployer.username=$DEPLOYER_USERNAME -Ddeployer.password=$DEPLOYER_PASSWORD
+      - mvn org.jacoco:jacoco-maven-plugin:prepare-agent package org.jacoco:jacoco-maven-plugin:report sonar:sonar -Dsonar.host.url=$SONAR_HOST -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=org.ujar:quickstart-kafka-stream-initialize -Dsonar.projectName=org.ujar:quickstart-kafka-stream-initialize --batch-mode --file pom.xml -s ../maven-settings.xml -Ddeployer.username=$DEPLOYER_USERNAME -Ddeployer.password=$DEPLOYER_PASSWORD
     when :
       event :
         - push
@@ -55,12 +55,13 @@ steps :
       DEPLOYER_PASSWORD :
         from_secret : DEPLOYER_PASSWORD
     commands :
-      - mvn deploy -P default -DskipTests=true -Dcheckstyle.skip=true -s ../maven-settings.xml -Ddeployer.username=$DEPLOYER_USERNAME -Ddeployer.password=$DEPLOYER_PASSWORD -DaltDeploymentRepository=ujar-snapshots-repository::default::https://nexus.c2a2.com/repository/maven-snapshots
+      - mvn deploy -DskipTests=true -Dcheckstyle.skip=true -s ../maven-settings.xml -Ddeployer.username=$DEPLOYER_USERNAME -Ddeployer.password=$DEPLOYER_PASSWORD -DaltDeploymentRepository=ujar-snapshots-repository::default::https://nexus.c2a2.com/repository/maven-snapshots
     when :
       branch :
         include :
-          - feature/*
-          - develop
+          - "feature/*"
+          - "develop"
+          - "*.*.x"
 
   - name : publish-release-jar
     depends_on :
@@ -76,12 +77,12 @@ steps :
       DEPLOYER_PASSWORD :
         from_secret : DEPLOYER_PASSWORD
     commands :
-      - mvn deploy -P default -DskipTests=true -Dcheckstyle.skip=true -s ../maven-settings.xml -Ddeployer.username=$DEPLOYER_USERNAME -Ddeployer.password=$DEPLOYER_PASSWORD -DaltDeploymentRepository=ujar-releases-repository::default::https://nexus.c2a2.com/repository/maven-releases
+      - mvn deploy -DskipTests=true -Dcheckstyle.skip=true -s ../maven-settings.xml -Ddeployer.username=$DEPLOYER_USERNAME -Ddeployer.password=$DEPLOYER_PASSWORD -DaltDeploymentRepository=ujar-releases-repository::default::https://nexus.c2a2.com/repository/maven-releases
     when :
       ref :
-        - refs/tags/*
+        - "refs/tags/*"
 
-  - name : build-container-snapshot-image
+  - name : build-container-with-feature
     depends_on :
       - publish-snapshot-jar
     image : plugins/docker
@@ -93,15 +94,14 @@ steps :
         from_secret : DOCKER_USERNAME
       password :
         from_secret : DOCKER_PASSWORD
-      repo : docker-registry.c2a2.com/ujar/bs-msg-kafka-stream-start
+      repo : docker-registry.c2a2.com/ujar/quickstart-kafka-stream-initialize
       registry : docker-registry.c2a2.com
       tags :
-        - latest
+        - ${DRONE_BRANCH:22}
     when :
       branch :
         include :
-          - feature/*
-          - develop
+          - "feature/containerized-*"
 
   - name : build-container-release-image
     depends_on :
@@ -115,13 +115,14 @@ steps :
         from_secret : DOCKER_USERNAME
       password :
         from_secret : DOCKER_PASSWORD
-      repo : docker-registry.c2a2.com/ujar/bs-msg-kafka-stream-start
+      repo : docker-registry.c2a2.com/ujar/quickstart-kafka-stream-initialize
       registry : docker-registry.c2a2.com
       tags :
         - ${DRONE_TAG}
+        - "latest"
     when :
       ref :
-        - refs/tags/*
+        - "refs/tags/*"
 
 services :
   - name : zookeeper
@@ -151,7 +152,8 @@ trigger :
   event :
     - custom
   branch :
-    - develop
+    - "develop"
+    - "*.*.x"
 
 volumes :
   - name : m2cache
@@ -166,17 +168,21 @@ steps :
       - name : m2cache
         path : /root/.m2
     commands :
-      - echo Prepare new release tag ${TAG}
+      - echo Prepare new version ${TAG}
       - mkdir ${TAG}
       - rmdir ${TAG}
-      - export NEXT_SNAPSHOT=$(increment_version -m ${TAG})-SNAPSHOT
+      - export NEXT_SNAPSHOT=$(increment_version -${INCREMENT_TYPE} ${TAG})-SNAPSHOT
+      - export GIT_AUTHOR_NAME=$${SVC_BUILD_GIT_USERNAME}
+      - export GIT_AUTHOR_EMAIL=$${SVC_BUILD_GIT_EMAIL}
+      - export GIT_COMMITTER_NAME=$${SVC_BUILD_GIT_USERNAME}
+      - export GIT_COMMITTER_EMAIL=$${SVC_BUILD_GIT_EMAIL}
       - git remote set-url --push origin ${DRONE_GIT_SSH_URL}
       - git checkout -b v${TAG}
       - mvn versions:set -DremoveSnapshot
       - mvn versions:set -DnewVersion=${TAG}
       - mvn versions:update-parent
       - >-
-        git commit -a -m "feat: prepare new release $${TAG}"
+        git commit -a -m "feat: bump version to $${TAG}"
       - git tag ${TAG} && git push origin ${TAG}
       - echo "✅ Release tag ${TAG} was created."
       - sleep 10

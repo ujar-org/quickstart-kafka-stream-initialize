@@ -8,9 +8,9 @@ Minimal Spring Boot based sample of Kafka Streams app.
 - Clone source code to the local machine:
 
 ```
-git clone https://github.com/ujar-org/bs-msg-kafka-stream-start.git
+git clone https://github.com/ujar-org/quickstart-kafka-stream-initialize.git
 
-cd bs-msg-kafka-stream-start
+cd quickstart-kafka-stream-initialize
 ```
 
 - Install Docker [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)
@@ -29,13 +29,19 @@ using [Maven](https://spring.io/guides/gs/maven/). You can build a jar files and
 - Create jar packages:
 
 ```
-mvn package
+./mvnw package
 ```
 
-- Run **bs-msg-kafka-stream-start** app:
+- Run **quickstart-kafka-stream-initialize** app:
 
 ```
 java -jar target/*.jar
+```
+
+You might also want to use Maven's `spring-boot:run` goal - applications run in an exploded form, as they do in your IDE:
+
+```
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local -P dev
 ```
 
 ## Code conventions
