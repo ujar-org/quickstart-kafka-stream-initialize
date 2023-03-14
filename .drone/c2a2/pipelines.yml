@@ -59,7 +59,6 @@ steps :
     when :
       branch :
         include :
-          - "feature/*"
           - "develop"
           - "*.*.x"
 
@@ -84,7 +83,7 @@ steps :
 
   - name : build-container-with-feature
     depends_on :
-      - publish-snapshot-jar
+      - build
     image : plugins/docker
     settings :
       dockerfile : .drone/c2a2/Dockerfile
